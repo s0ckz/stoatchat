@@ -1,0 +1,44 @@
+name: Build api image (s0ckz)
+
+# The only workflow meant to run on this fork: builds the patched `api` service
+# for stoat.lrl.com.br. Everything else here is upstream's CI and targets
+# upstream's self-hosted runners.
+on:
+  push:
+    branches: [feat/h265-metadata-permission]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/stoatchat-api
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.s0ckz-api
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:v0.15.1-h265meta
+            ${{ env.IMAGE }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=v0.15.1-h265meta
+          cache-from: type=gha,scope=s0ckz-api
+          cache-to: type=gha,scope=s0ckz-api,mode=max

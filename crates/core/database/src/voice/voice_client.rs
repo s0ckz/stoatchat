@@ -93,6 +93,10 @@ impl VoiceClient {
                     .map(ToString::to_string)
                     .collect(),
                 can_subscribe: permissions.has_channel_permission(ChannelPermission::Listen),
+                // Lets a client set its own participant metadata, which the web
+                // client uses to announce which codecs it can decode (H.265 in
+                // particular) so a sharer only picks one every viewer can watch.
+                can_update_own_metadata: true,
                 room: channel.id().to_string(),
                 ..Default::default()
             })

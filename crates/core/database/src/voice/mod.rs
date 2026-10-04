@@ -535,6 +535,11 @@ pub async fn sync_user_voice_permissions(
                     can_subscribe: can_listen,
                     can_publish: can_speak,
                     can_publish_data: can_speak,
+                    // Must match the token grant in voice_client.rs: this replaces
+                    // the participant's whole permission set, so leaving it to
+                    // Default would revoke metadata updates whenever a member's
+                    // roles change mid-call.
+                    can_update_metadata: true,
                     ..Default::default()
                 },
             )

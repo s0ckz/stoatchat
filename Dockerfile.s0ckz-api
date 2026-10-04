@@ -1,0 +1,25 @@
+# Builds only the `api` service (revolt-delta) from this tree, amd64 only.
+#
+# Upstream's crates/delta/Dockerfile starts `FROM ghcr.io/stoatchat/base:latest`
+# with that name hard-coded -- the BASE_IMAGE build-arg CI passes is never
+# declared -- so building it in a fork silently ships upstream's binary, not
+# ours. This compiles delta here instead. Runtime stage matches upstream's.
+FROM rust:1.92.0-slim-bookworm AS builder
+RUN apt-get update && apt-get install -y --no-install-recommends make pkg-config libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /home/rust/src
+COPY . .
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/home/rust/src/target,id=delta-target \
+    cargo build --locked --release -p revolt-delta \
+    && cp target/release/revolt-delta /revolt-delta
+
+FROM debian:12 AS debian
+
+FROM gcr.io/distroless/cc-debian12:nonroot
+COPY --from=builder /revolt-delta ./
+COPY --from=debian /usr/bin/uname /usr/bin/uname
+EXPOSE 14702
+ENV ROCKET_ADDRESS=0.0.0.0
+USER nonroot
+CMD ["./revolt-delta"]
